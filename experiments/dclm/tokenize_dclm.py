@@ -41,7 +41,7 @@ dclm_components_llama3 = {
     ),
     "proofpile_2": (
         default_tokenize(
-            name="proofpile_2",
+            name="EleutherAI/proof-pile-2",
             dataset=proofpile_2,
             tokenizer=llama3_tokenizer,
         ).with_output_path("tokenized/proofpile_2-4a35c7/")

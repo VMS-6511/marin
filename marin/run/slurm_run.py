@@ -26,7 +26,7 @@ Arguments:
 Options:
     --no_wait                 Submit the job and return immediately without waiting for completion
     --dry_run                 Print the generated SLURM script without submitting
-    --venv_path PATH          Path to the virtual environment to activate (default: .venv)
+    --conda_env PATH          Path to the virtual environment to activate (default: .venv)
     --env_vars, -e KEY VALUE  Set environment variables for the job
     --slurm, -s KEY VALUE     Set SLURM options, overriding defaults
     --job_name NAME           Set a custom name for the SLURM job
@@ -61,11 +61,9 @@ DEFAULT_SLURM_ARGS = {
     "output": "logs/marin-%j.out",
     "error": "logs/marin-%j.err",
     "time": "48:00:00",
-    "mem": "200G",
-    "gres": "gpu:1",
-    "account": "nlp",
-    "partition": "sc-loprio",
-    "constraint": "[40G|48G|80G|141G]",
+    "mem": "80G",
+    "gres": "gpu:3",
+    "partition": "pi_ashia07",
     "nodes": "1",
     "ntasks-per-node": "1",
     "cpus-per-task": "64",
@@ -97,7 +95,7 @@ def create_sbatch_script(
     env_vars: dict[str, str],
     slurm_args: dict[str, str],
     job_name: str | None = None,
-    venv_path: str = ".venv",
+    conda_env: str = ".venv",
 ) -> str:
     if not job_name:
         job_name = f"job_{int(time.time())}"
@@ -117,11 +115,7 @@ def create_sbatch_script(
         script += f"export HF_TOKEN={HfFolder.get_token()}\n"
     script += f"\n# Set working directory\ncd {current_dir}\n"
     script += "\n# Activate virtual environment\n"
-    script += f"if [ -f {venv_path}/bin/activate ]; then\n"
-    script += f"  source {venv_path}/bin/activate\n"
-    script += "else\n"
-    script += f"  echo 'Warning: Virtual environment {venv_path} not found. Continuing without activation.'\n"
-    script += "fi\n\n"
+    script += f"  conda activate {conda_env}"
     script += "# Run the command\n"
     script += f"srun {command}\n"
     return script
@@ -242,7 +236,7 @@ def main():
     parser = argparse.ArgumentParser(description="Submit SLURM jobs using the command-line.")
     parser.add_argument("--no_wait", action="store_true", help="Do not wait for the job to finish.")
     parser.add_argument("--dry_run", action="store_true", help="Print the SLURM script without submitting the job.")
-    parser.add_argument("--venv_path", type=str, default=".venv", help="Path to the virtual environment to activate.")
+    parser.add_argument("--conda_env", type=str, default=".venv", help="Path to the virtual environment to activate.")
     parser.add_argument(
         "--env_vars", "-e", action="append", nargs="+", metavar=("KEY", "VALUE"), help="Set environment variables."
     )
@@ -283,7 +277,7 @@ def main():
         env_vars=env_vars,
         slurm_args=slurm_args,
         job_name=args.job_name,
-        venv_path=args.venv_path,
+        conda_env=args.conda_env,
     )
     if args.dry_run:
         print("#" * 60)
